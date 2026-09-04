@@ -1,0 +1,36 @@
+FFXIV CLEAN STREAM — QUICK START
+
+FFXIV Clean Stream creates the overlay-free preview that you share in Discord.
+Your normal FFXIV window continues to show the MMOMinion GUI.
+
+1. Start FFXIV in DirectX 11 mode.
+2. Start MMOMinion and wait until its GUI is visible.
+3. Run FfxivCleanStream.exe. If FFXIV runs as administrator, run this
+   app as administrator too.
+4. Leave 1280 × 720 and 30 FPS selected, then click “Start / Resume”.
+5. Wait for the status to say “Ready”.
+6. In Discord, share the window named “FFXIV Clean Stream”. Do not share
+   FFXIV, your entire screen, or “FFXIV Clean Stream — Standalone Controls”.
+
+The EXE and FfxivCleanStreamHook64.dll must stay together in the same folder.
+
+The preview choices are 1280 × 720 (default) and 1920 × 1080. Both are
+16:9. The 720p choice gives Discord a smaller window-capture source, but
+Discord still chooses the encoded stream quality and may rescale it. The GPU
+capture ring remains at FFXIV's native render resolution.
+
+When you finish, click “End stream” or close the preview with its X button. To
+stream again, choose your resolution and FPS, then click “Start / Resume”.
+Discord may still point at the closed preview, so select the newly created
+“FFXIV Clean Stream” window before going live again.
+
+If MMOMinion changes its graphics hook, fully exit and restart FFXIV. Wait
+until the MMOMinion GUI is visible before starting capture again.
+
+If performance is tight, click “End stream”, select 1280 × 720 and 15 FPS,
+then click “Start / Resume”.
+
+The preview supplies video only. FFXIV audio may need to be selected or routed
+separately in Discord.
+
+See README.md for troubleshooting, safety information, and build instructions.

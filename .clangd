@@ -1,0 +1,13 @@
+# Common target, include, and define flags come from compile_flags.txt. Keep
+# language selection here because that file is shared by C and C++ sources.
+If:
+  PathMatch: (common|host|hook|tests)/.*\.(cpp|hpp|h)$
+CompileFlags:
+  Add:
+    - -std=c++17
+---
+If:
+  PathMatch: .*\.c$
+CompileFlags:
+  Add:
+    - -std=c17

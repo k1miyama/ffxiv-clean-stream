@@ -1,0 +1,21 @@
+{
+  "cmake.configureOnOpen": false,
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.intelliSenseMode": "windows-clang-x64",
+  "C_Cpp.default.defines": [
+    "UNICODE",
+    "_UNICODE",
+    "__MSVCRT_VERSION__=0xE00",
+    "_WIN32_WINNT=0x0a00",
+    "_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE"
+  ],
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/**",
+    "${workspaceFolder}/.tools/zig-0.16.0/lib/libcxx/include",
+    "${workspaceFolder}/.tools/zig-0.16.0/lib/libcxxabi/include",
+    "${workspaceFolder}/.tools/zig-0.16.0/lib/include",
+    "${workspaceFolder}/.tools/zig-0.16.0/lib/libc/include/any-windows-any",
+    "${workspaceFolder}/.tools/zig-0.16.0/lib/libunwind/include"
+  ]
+}

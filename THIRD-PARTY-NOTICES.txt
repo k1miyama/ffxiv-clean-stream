@@ -1,0 +1,11 @@
+FFXIV Clean Stream includes MinHook.
+
+MinHook - The Minimalistic API Hooking Library for x64/x86
+Copyright (C) 2009-2017 Tsuda Kageyu.
+Repository: https://github.com/TsudaKageyu/minhook
+Included commit: d94c64d32ea37bc4f5ee47d580709f70c6fb6080
+License: BSD 2-Clause (the complete license is included as MinHook-LICENSE.txt)
+
+OBS Studio was consulted as an architectural reference only. No OBS source or
+binary is copied, linked, or distributed in this package.
+
