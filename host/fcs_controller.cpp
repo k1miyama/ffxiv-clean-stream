@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <wchar.h>
 
+#include "fcs_clipboard.hpp"
 #include "fcs_controller.hpp"
 #include "fcs_preview_window.hpp"
 #include "fcs_target.hpp"
@@ -10,7 +11,13 @@
 namespace fcs::host {
 
 HostController::HostController(HINSTANCE instance)
-    : instance_(instance ? instance : GetModuleHandleW(nullptr)) {}
+    : HostController(instance, &CopyUnicodeTextToClipboard) {}
+
+HostController::HostController(HINSTANCE instance,
+                               ClipboardWriter clipboardWriter)
+    : instance_(instance ? instance : GetModuleHandleW(nullptr)),
+      clipboardWriter_(clipboardWriter ? clipboardWriter
+                                       : &CopyUnicodeTextToClipboard) {}
 
 HostController::~HostController() {
     Shutdown();
@@ -50,21 +57,52 @@ void HostController::SetStreamResolution(StreamResolution resolution) {
     }
 }
 
-void HostController::BindControls(HWND statusLabel, HWND fpsCombo) {
+void HostController::BindControls(HWND statusLabel, HWND fpsCombo,
+                                  HWND copyErrorButton) {
     statusLabel_ = statusLabel;
     fpsCombo_ = fpsCombo;
+    copyErrorButton_ = copyErrorButton;
+    copyableError_[0] = L'\0';
+    if (copyErrorButton_) EnableWindow(copyErrorButton_, FALSE);
 }
 
-void HostController::WriteStatus(void* context, const wchar_t* text) {
-    static_cast<HostController*>(context)->SetStatus(text);
+void HostController::WriteStatus(void* context, const wchar_t* text,
+                                 StatusSeverity severity) {
+    static_cast<HostController*>(context)->SetStatus(text, severity);
 }
 
 StatusSink HostController::StatusReporter() {
     return StatusSink{this, &HostController::WriteStatus};
 }
 
-void HostController::SetStatus(const wchar_t* text) {
+void HostController::SetStatus(const wchar_t* text,
+                               StatusSeverity severity) {
+    if (!text) text = L"";
+    const bool isError = severity == StatusSeverity::Error;
+    if (isError) {
+        wcsncpy_s(copyableError_,
+                  sizeof(copyableError_) / sizeof(copyableError_[0]), text,
+                  _TRUNCATE);
+    } else {
+        copyableError_[0] = L'\0';
+    }
+    if (copyErrorButton_) {
+        SetWindowTextW(copyErrorButton_, L"Copy error");
+        EnableWindow(copyErrorButton_, isError && copyableError_[0]);
+    }
     if (statusLabel_) SetWindowTextW(statusLabel_, text);
+}
+
+void HostController::CopyErrorToClipboard() {
+    if (shuttingDown_ || !copyErrorButton_ ||
+        !IsWindow(copyErrorButton_) || !copyableError_[0]) {
+        return;
+    }
+    const HWND owner = statusLabel_ ? GetAncestor(statusLabel_, GA_ROOT)
+                                    : nullptr;
+    const bool copied = clipboardWriter_ &&
+        clipboardWriter_(owner, copyableError_);
+    SetWindowTextW(copyErrorButton_, copied ? L"Copied!" : L"Copy failed");
 }
 
 LONG HostController::SelectedFps() const {
@@ -115,7 +153,8 @@ bool HostController::EnsurePreviewWindow() {
 void HostController::StartCapture() {
     if (shuttingDown_) return;
     if (!EnsurePreviewWindow()) {
-        SetStatus(L"The clean stream window could not be created.");
+        SetStatus(L"The clean stream window could not be created.",
+                  StatusSeverity::Error);
         return;
     }
     preview_.ResetFailureCount();
@@ -130,7 +169,7 @@ void HostController::StartCapture() {
                 SetStatus(
                     L"MMOMinion changed its graphics hook after capture began. "
                     L"Restart FFXIV, wait until the MMOMinion GUI is visible, "
-                    L"then click Start / Resume.");
+                    L"then click Start / Resume.", StatusSeverity::Error);
                 return;
             }
             session_.Resume(fps);
@@ -146,11 +185,13 @@ void HostController::StartCapture() {
     TargetInfo target{};
     if (!FindFfxiv(target)) {
         SetStatus(
-            L"FFXIV (DirectX 11) was not found. Start the game and MMOMinion first.");
+            L"FFXIV (DirectX 11) was not found. Start the game and MMOMinion first.",
+            StatusSeverity::Error);
         return;
     }
     if (!session_.Create(target.pid, target.window, fps)) {
-        SetStatus(L"The private capture session could not be created.");
+        SetStatus(L"The private capture session could not be created.",
+                  StatusSeverity::Error);
         CloseSession();
         return;
     }
@@ -158,7 +199,7 @@ void HostController::StartCapture() {
         L"Attaching after MMOMinion... waiting for the clean game frame.");
     wchar_t error[256]{};
     if (!InjectHook(target.pid, error, 256)) {
-        SetStatus(error);
+        SetStatus(error, StatusSeverity::Error);
         CloseSession();
     }
 }
@@ -201,7 +242,8 @@ void HostController::UpdateStatus() {
     if (preview_.FailureCount() >= 3) {
         SetStatus(
             L"The preview could not open this GPU format after three attempts. "
-            L"Choose 30 FPS and click Start / Resume to try again.");
+            L"Choose 30 FPS and click Start / Resume to try again.",
+            StatusSeverity::Error);
         return;
     }
     wchar_t text[768]{};
@@ -236,7 +278,10 @@ void HostController::UpdateStatus() {
         swprintf_s(text, 768, L"%s",
                    ipc->message[0] ? ipc->message : L"Waiting...");
     }
-    SetStatus(text);
+    SetStatus(text, state == FCS_STATE_ERROR ||
+                        state == FCS_STATE_HOOK_ORDER_LOST
+                    ? StatusSeverity::Error
+                    : StatusSeverity::Info);
 }
 
 void HostController::Tick() {

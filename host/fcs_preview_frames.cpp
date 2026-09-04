@@ -12,6 +12,8 @@ void PreviewRenderer::RequestResourceRecreate(CaptureSession& session,
                                               StatusSink status,
                                               const wchar_t* text) {
     const LONG64 failedGeneration = openGeneration_;
+    // Ring/device changes are retried automatically and are not terminal
+    // user-facing errors unless the controller reaches its failure limit.
     ReportStatus(status, text);
     if (session.Data() && ++viewerFailureCount_ <= 3) {
         session.RequestResourceRecreate();

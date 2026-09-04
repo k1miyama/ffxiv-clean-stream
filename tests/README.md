@@ -25,8 +25,10 @@ and confirms that the downstream overlay still ran exactly once.
 - `capture_perf_test.cpp` compares a bounded baseline against 30 FPS capture and checks that every
   submitted frame drains from the ring.
 - `host_preview_lifecycle_test.cpp` uses only hidden test-owned windows and safe in-process target
-  stubs to exercise the real resolution combo, Start and End buttons, preview X, DPI sizing, retained
-  IPC session, no-reinjection resume, and unexpected-window-destruction cleanup.
+  stubs to exercise the real resolution combo, Start, End, and Copy error buttons, preview X, DPI
+  sizing, retained IPC session, no-reinjection resume, and unexpected-window-destruction cleanup.
+  Its injected in-memory clipboard writer verifies the complete copied error without reading or
+  changing the user's clipboard.
 - `plain_legacy_ring_protocol_test.cpp` deterministically exercises protocol states that should not
   depend on GPU timing.
 - `gpu_share_self_test.cpp` checks every supported cross-device texture-sharing mode.

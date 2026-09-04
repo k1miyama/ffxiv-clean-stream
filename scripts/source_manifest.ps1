@@ -16,6 +16,7 @@ $FcsCommonSources = @()
 $FcsHostSources = @(
     "host\fcs_host.cpp",
     "host\fcs_ui.cpp",
+    "host\fcs_clipboard.cpp",
     "host\fcs_preview_window.cpp",
     "host\fcs_controller.cpp",
     "host\fcs_target.cpp",
@@ -85,6 +86,7 @@ $FcsCaptureTestTargets = @(
         AdditionalSources = @(
             "host\fcs_controller.cpp",
             "host\fcs_ui.cpp",
+            "host\fcs_clipboard.cpp",
             "host\fcs_preview_window.cpp",
             "host\fcs_session.cpp",
             "host\fcs_preview_resources.cpp",

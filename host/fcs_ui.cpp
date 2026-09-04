@@ -15,6 +15,7 @@ constexpr int IDC_FPS = 1003;
 constexpr int IDC_STATUS = 1004;
 constexpr int IDC_END = 1005;
 constexpr int IDC_RESOLUTION = 1006;
+constexpr int IDC_COPY_ERROR = 1007;
 constexpr UINT_PTR STATUS_TIMER = 1;
 
 HostController* ControllerForWindow(HWND window) {
@@ -67,6 +68,12 @@ LRESULT CALLBACK ControlWindowProc(HWND window, UINT message, WPARAM wParam,
             130, 34, window, reinterpret_cast<HMENU>(IDC_END), instance,
             nullptr);
         SendMessageW(end, WM_SETFONT, reinterpret_cast<WPARAM>(font), TRUE);
+        HWND copyError = CreateWindowExW(
+            0, L"BUTTON", L"Copy error",
+            WS_CHILD | WS_VISIBLE | WS_DISABLED, 464, 90, 108, 34, window,
+            reinterpret_cast<HMENU>(IDC_COPY_ERROR), instance, nullptr);
+        SendMessageW(copyError, WM_SETFONT,
+                     reinterpret_cast<WPARAM>(font), TRUE);
         HWND fpsLabel = CreateWindowExW(
             0, L"STATIC", L"Frame rate:", WS_CHILD | WS_VISIBLE, 18, 146,
             75, 22, window, nullptr, instance, nullptr);
@@ -109,7 +116,9 @@ LRESULT CALLBACK ControlWindowProc(HWND window, UINT message, WPARAM wParam,
             reinterpret_cast<HMENU>(IDC_STATUS), instance, nullptr);
         SendMessageW(statusLabel, WM_SETFONT,
                      reinterpret_cast<WPARAM>(font), TRUE);
-        if (controller) controller->BindControls(statusLabel, fpsCombo);
+        if (controller) {
+            controller->BindControls(statusLabel, fpsCombo, copyError);
+        }
         SetTimer(window, STATUS_TIMER, 16, nullptr);
         return 0;
     }
@@ -123,6 +132,10 @@ LRESULT CALLBACK ControlWindowProc(HWND window, UINT message, WPARAM wParam,
         }
         if (LOWORD(wParam) == IDC_END) {
             controller->EndCapture();
+        }
+        if (LOWORD(wParam) == IDC_COPY_ERROR &&
+            HIWORD(wParam) == BN_CLICKED) {
+            controller->CopyErrorToClipboard();
         }
         if (LOWORD(wParam) == IDC_RESOLUTION &&
             HIWORD(wParam) == CBN_SELCHANGE) {

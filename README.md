@@ -33,6 +33,10 @@ Only one copy of FFXIV Clean Stream can run at a time.
 7. In Discord, share the application window named **FFXIV Clean Stream**. Do not select FFXIV or
    the controls window named **FFXIV Clean Stream — Standalone Controls**.
 
+If the app reports an error, click **Copy error** and paste the complete message into the
+[GitHub bug-report form](https://github.com/k1miyama/ffxiv-clean-stream/issues/new/choose). The
+button stays disabled when the current status is not an error.
+
 Keep the preview window open while it is being shared. The MMOMinion GUI should remain visible in
 your normal game window but absent from the Discord preview.
 
@@ -48,6 +52,8 @@ going live again.
 - **Pause capture** stops new GPU frame copies. Click **Start / Resume** to continue.
 - **End stream** stops capture, releases the controller's preview resources, and closes the
   shareable preview window. Closing the preview with its **X** button does the same thing.
+- **Copy error** copies the complete current error message to the Windows clipboard. It becomes
+  available only while an error is displayed and changes to **Copied!** on success.
 - Closing the controls window exits the controller. The small capture helper stays loaded until
   FFXIV exits, even when capture is paused or the stream is ended.
 
@@ -84,7 +90,7 @@ normal: the app drops work instead of making the game wait.
 | The helper DLL is missing or could not load | Keep the EXE and DLL together. Check whether security software quarantined `FfxivCleanStreamHook64.dll`. |
 | MMOMinion changed its graphics hook | Fully exit and restart FFXIV. Wait for the MMOMinion GUI to appear, then run FFXIV Clean Stream and start capture again. |
 | The overlay is present from the first preview frame | Restart FFXIV and repeat the startup order exactly. If it persists, that MMOMinion build may draw too early for its pixels to be separated. |
-| The preview is black, frozen, or reports a GPU error | Click **End stream**, select 1280 × 720 and 30 FPS, then click **Start / Resume**. If it still fails, run `GpuShareSelfTest.exe` and keep the complete error text for a bug report. |
+| The preview is black, frozen, or reports a GPU error | Click **Copy error**, then click **End stream**, select 1280 × 720 and 30 FPS, and click **Start / Resume**. If it still fails, run `GpuShareSelfTest.exe` and include the copied message in a bug report. |
 | Discord stays black after restarting the stream | Stop sharing the old preview in Discord and select the newly created **FFXIV Clean Stream** window. |
 | Game performance drops | Click **End stream**, select 1280 × 720 and 15 FPS, then click **Start / Resume**. The 720p choice lightens the output window; 15 FPS also reduces game-side copy frequency. Disable other programs that inject into or capture FFXIV. |
 | FFXIV Clean Stream says it is already running | Find and use the existing controls window, or close it before starting another copy. |
@@ -128,6 +134,7 @@ driver; the real overlay order is tested only when running with FFXIV.
   resource negotiation and lifetime, frame capture, swap-chain hooks, and worker lifecycle.
 - `tests/` contains the GPU self-test and hidden synthetic end-to-end fixtures. Shared fixture code
   is divided into process, IPC, and GPU support modules.
+- `.github/ISSUE_TEMPLATE/` contains guided forms for bug reports and feature requests.
 - First-party implementations use `.cpp`; first-party headers use `.h` or `.hpp`.
 - `scripts/source_manifest.ps1` assigns every production and test `.cpp` file to a build target. The
   build fails if a source is missing, unclassified, or uses an unsupported implementation suffix.

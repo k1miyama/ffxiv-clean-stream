@@ -86,6 +86,8 @@ bool PreviewRenderer::SetupFailed(CaptureSession& session,
                                   const StableMetadata& metadata,
                                   StatusSink status,
                                   const wchar_t* text) {
+    // Resource setup is retried through the compatibility ladder. Keep this
+    // as progress until the controller observes the terminal failure count.
     ReportStatus(status, text);
     if (session.Data() && ++viewerFailureCount_ <= 3) {
         session.RequestResourceRecreate();

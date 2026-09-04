@@ -27,6 +27,10 @@ Discord may still point at the closed preview, so select the newly created
 If MMOMinion changes its graphics hook, fully exit and restart FFXIV. Wait
 until the MMOMinion GUI is visible before starting capture again.
 
+If an error appears, click “Copy error” and paste the complete message into
+the GitHub bug-report form. The button is disabled when no error is present:
+https://github.com/k1miyama/ffxiv-clean-stream/issues/new/choose
+
 If performance is tight, click “End stream”, select 1280 × 720 and 15 FPS,
 then click “Start / Resume”.
 

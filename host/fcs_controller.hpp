@@ -11,21 +11,26 @@
 
 namespace fcs::host {
 
+using ClipboardWriter = bool (*)(HWND owner, const wchar_t* text);
+
 class HostController final {
 public:
     explicit HostController(HINSTANCE instance);
+    HostController(HINSTANCE instance, ClipboardWriter clipboardWriter);
     ~HostController();
 
     HostController(const HostController&) = delete;
     HostController& operator=(const HostController&) = delete;
 
     void BindPreviewWindow(HWND window);
-    void BindControls(HWND statusLabel, HWND fpsCombo);
+    void BindControls(HWND statusLabel, HWND fpsCombo,
+                      HWND copyErrorButton);
     void OnPreviewWindowDestroyed(HWND window);
 
     void StartCapture();
     void PauseCapture();
     void EndCapture();
+    void CopyErrorToClipboard();
     void Tick();
     void Shutdown();
 
@@ -38,9 +43,11 @@ public:
     bool HasPreviewDevice() const { return preview_.HasDevice(); }
 
 private:
-    static void WriteStatus(void* context, const wchar_t* text);
+    static void WriteStatus(void* context, const wchar_t* text,
+                            StatusSeverity severity);
     StatusSink StatusReporter();
-    void SetStatus(const wchar_t* text);
+    void SetStatus(const wchar_t* text,
+                   StatusSeverity severity = StatusSeverity::Info);
     void CloseSession();
     void ClosePreviewWindow();
     bool EnsurePreviewWindow();
@@ -49,11 +56,14 @@ private:
     LONG SelectedFps() const;
 
     HINSTANCE instance_ = nullptr;
+    ClipboardWriter clipboardWriter_ = nullptr;
     CaptureSession session_;
     PreviewRenderer preview_;
     HWND previewWindow_ = nullptr;
     HWND statusLabel_ = nullptr;
     HWND fpsCombo_ = nullptr;
+    HWND copyErrorButton_ = nullptr;
+    wchar_t copyableError_[2048]{};
     StreamResolution streamResolution_ = kDefaultStreamResolution;
     UINT statusTicks_ = 0;
     HWND previewDestructionInProgress_ = nullptr;

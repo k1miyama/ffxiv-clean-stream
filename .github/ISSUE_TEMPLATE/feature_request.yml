@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an improvement to FFXIV Clean Stream.
+title: "[Feature]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. Please describe the need first so we can understand what a useful solution would look like.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Explain what is difficult today, who it affects, and when it happens.
+      placeholder: I have trouble with ... when ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_behavior
+    attributes:
+      label: What would you like FFXIV Clean Stream to do?
+      description: Describe the behavior you would expect to see.
+      placeholder: It would help if the app ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+      description: Describe other solutions or workarounds you tried or considered. Write "None" if there are none.
+      placeholder: I also tried ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add examples, screenshots, or other details that would help explain the request. Hide personal information before attaching anything.

@@ -7,6 +7,7 @@
 #include <windows.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <wchar.h>
 
 #include "../host/fcs_controller.hpp"
 #include "../host/fcs_preview_window.hpp"
@@ -18,7 +19,20 @@ namespace {
 
 LONG g_findTargetCalls = 0;
 LONG g_injectCalls = 0;
+LONG g_clipboardWrites = 0;
+bool g_clipboardSucceeds = true;
 HWND g_dummyTarget = nullptr;
+HWND g_clipboardOwner = nullptr;
+wchar_t g_clipboardText[2048]{};
+
+bool CaptureClipboardText(HWND owner, const wchar_t* text) {
+    ++g_clipboardWrites;
+    g_clipboardOwner = owner;
+    wcsncpy_s(g_clipboardText,
+              sizeof(g_clipboardText) / sizeof(g_clipboardText[0]),
+              text ? text : L"", _TRUNCATE);
+    return g_clipboardSucceeds && text && text[0];
+}
 
 LRESULT CALLBACK DummyTargetWindowProc(HWND window, UINT message,
                                        WPARAM wParam, LPARAM lParam) {
@@ -260,7 +274,7 @@ int main() {
         return 1;
     }
 
-    HostController controller(instance);
+    HostController controller(instance, &CaptureClipboardText);
     if (!fcs::host::CreateHostWindows(instance, SW_HIDE, controller)) {
         wprintf(L"FAIL: could not create the hidden host windows\n");
         DestroyWindow(g_dummyTarget);
@@ -276,6 +290,9 @@ int main() {
     HWND endButton = control
         ? FindChildByText(control, L"BUTTON", L"End stream")
         : nullptr;
+    HWND copyErrorButton = control
+        ? FindChildByText(control, L"BUTTON", L"Copy error")
+        : nullptr;
     HWND resolutionCombo = control ? FindResolutionCombo(control) : nullptr;
     HWND statusLabel = control
         ? FindChildByText(
@@ -289,7 +306,7 @@ int main() {
     if (!ExpectHidden(control, L"control window") ||
         !ExpectHidden(preview, L"initial preview") ||
         !ExpectHidden(g_dummyTarget, L"dummy target") || !startButton ||
-        !endButton || !resolutionCombo || !statusLabel ||
+        !endButton || !copyErrorButton || !resolutionCombo || !statusLabel ||
         !ExpectPerMonitorV2(preview, L"initial preview")) {
         wprintf(L"FAIL: hidden UI controls were not created as expected\n");
         passed = false;
@@ -297,8 +314,16 @@ int main() {
     if (!controller.HasPreviewWindow() ||
         controller.PreviewWindow() != preview ||
         !ExpectClientSize(preview, 1280, 720, L"default preset") ||
+        (copyErrorButton && IsWindowEnabled(copyErrorButton)) ||
         (resolutionCombo &&
          SendMessageW(resolutionCombo, CB_GETCURSEL, 0, 0) != 0)) {
+        passed = false;
+    }
+    if (copyErrorButton) {
+        DispatchControlNotification(control, copyErrorButton, BN_CLICKED);
+    }
+    if (g_clipboardWrites != 0) {
+        wprintf(L"FAIL: disabled Copy error exposed stale status text\n");
         passed = false;
     }
 
@@ -337,13 +362,108 @@ int main() {
     if (!DispatchControlNotification(control, startButton, BN_CLICKED) ||
         g_findTargetCalls != 1 || g_injectCalls != 1 ||
         !OpenCaptureIpc(captureMapping, captureIpc) ||
-        !ExpectCaptureControl(captureIpc, 0, true, L"initial Start")) {
+        !ExpectCaptureControl(captureIpc, 0, true, L"initial Start") ||
+        (copyErrorButton && IsWindowEnabled(copyErrorButton))) {
         wprintf(L"FAIL: Start button did not establish the safe test session "
                 L"(find=%ld, inject=%ld)\n",
                 g_findTargetCalls, g_injectCalls);
         passed = false;
     }
     if (captureIpc) {
+        InterlockedAnd(
+            &captureIpc->command,
+            ~static_cast<LONG>(FCS_COMMAND_RECREATE_RESOURCES));
+    }
+
+    // Publish a distinctive multiline Unicode error through the real IPC
+    // status path. The injected writer captures it in memory and never opens
+    // or changes the user's clipboard.
+    constexpr wchar_t rawError[] =
+        L"Synthetic GPU error Ω.\r\nSecond diagnostic line.";
+    constexpr wchar_t displayedErrorExpected[] =
+        L"Capture error (-4242):\r\nSynthetic GPU error Ω.\r\n"
+        L"Second diagnostic line.";
+    wchar_t displayedError[256]{};
+    wchar_t copyButtonText[64]{};
+    if (captureIpc) {
+        captureIpc->lastError = -4242;
+        wcsncpy_s(captureIpc->message,
+                  sizeof(captureIpc->message) /
+                      sizeof(captureIpc->message[0]),
+                  rawError, _TRUNCATE);
+        InterlockedExchange(&captureIpc->state, FCS_STATE_ERROR);
+    }
+    for (UINT tick = 0; tick < 30; ++tick) controller.Tick();
+    if (statusLabel) {
+        GetWindowTextW(statusLabel, displayedError,
+                       static_cast<int>(sizeof(displayedError) /
+                                        sizeof(displayedError[0])));
+    }
+    g_clipboardSucceeds = false;
+    if (!copyErrorButton || !IsWindowEnabled(copyErrorButton) ||
+        lstrcmpW(displayedError, displayedErrorExpected) != 0 ||
+        !DispatchControlNotification(control, copyErrorButton, BN_CLICKED)) {
+        wprintf(L"FAIL: Copy error was not enabled for an IPC error\n");
+        passed = false;
+    }
+    if (copyErrorButton) {
+        GetWindowTextW(copyErrorButton, copyButtonText,
+                       static_cast<int>(sizeof(copyButtonText) /
+                                        sizeof(copyButtonText[0])));
+    }
+    if (statusLabel) {
+        GetWindowTextW(statusLabel, displayedError,
+                       static_cast<int>(sizeof(displayedError) /
+                                        sizeof(displayedError[0])));
+    }
+    if (g_clipboardWrites != 1 || g_clipboardOwner != control ||
+        lstrcmpW(g_clipboardText, displayedErrorExpected) != 0 ||
+        lstrcmpW(copyButtonText, L"Copy failed") != 0 ||
+        !IsWindowEnabled(copyErrorButton) ||
+        lstrcmpW(displayedError, displayedErrorExpected) != 0) {
+        wprintf(L"FAIL: failed clipboard write lost the diagnostic or retry\n");
+        passed = false;
+    }
+    g_clipboardSucceeds = true;
+    if (!DispatchControlNotification(control, copyErrorButton, BN_CLICKED)) {
+        wprintf(L"FAIL: Copy error retry dispatch failed\n");
+        passed = false;
+    }
+    if (copyErrorButton) {
+        GetWindowTextW(copyErrorButton, copyButtonText,
+                       static_cast<int>(sizeof(copyButtonText) /
+                                        sizeof(copyButtonText[0])));
+    }
+    if (g_clipboardWrites != 2 ||
+        lstrcmpW(g_clipboardText, displayedErrorExpected) != 0 ||
+        lstrcmpW(copyButtonText, L"Copied!") != 0) {
+        wprintf(L"FAIL: Copy error did not copy the complete diagnostic\n");
+        passed = false;
+    }
+
+    // Any informational update must clear the copyable diagnostic and
+    // disable the button, including against a forged WM_COMMAND.
+    if (!DispatchControlNotification(control, startButton, BN_CLICKED) ||
+        g_findTargetCalls != 1 || g_injectCalls != 1 ||
+        !ExpectCaptureControl(captureIpc, 0, true,
+                              L"resume after copied error") ||
+        (copyErrorButton && IsWindowEnabled(copyErrorButton))) {
+        wprintf(L"FAIL: informational resume retained the copyable error\n");
+        passed = false;
+    }
+    if (copyErrorButton) {
+        DispatchControlNotification(control, copyErrorButton, BN_CLICKED);
+        GetWindowTextW(copyErrorButton, copyButtonText,
+                       static_cast<int>(sizeof(copyButtonText) /
+                                        sizeof(copyButtonText[0])));
+    }
+    if (g_clipboardWrites != 2 ||
+        lstrcmpW(copyButtonText, L"Copy error") != 0) {
+        wprintf(L"FAIL: disabled Copy error copied a stale diagnostic\n");
+        passed = false;
+    }
+    if (captureIpc) {
+        InterlockedExchange(&captureIpc->state, FCS_STATE_INJECTED);
         InterlockedAnd(
             &captureIpc->command,
             ~static_cast<LONG>(FCS_COMMAND_RECREATE_RESOURCES));
@@ -476,7 +596,7 @@ int main() {
     g_dummyTarget = nullptr;
 
     if (!passed) return 1;
-    wprintf(L"PASS: hidden UI dispatch, preview X, retained resume, DPI, and "
-            L"16:9 resolution presets\n");
+    wprintf(L"PASS: hidden UI dispatch, Copy error, preview X, retained "
+            L"resume, DPI, and 16:9 resolution presets\n");
     return 0;
 }

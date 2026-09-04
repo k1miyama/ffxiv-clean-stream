@@ -1,0 +1,108 @@
+name: Bug report
+description: Tell us about a problem with FFXIV Clean Stream.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem.
+
+        Please do not include passwords, account tokens, private messages, or other personal information. Copy only the error text needed to explain the problem.
+
+  - type: input
+    id: version
+    attributes:
+      label: FFXIV Clean Stream version
+      description: Copy the value from VERSION.txt in the folder you extracted.
+      placeholder: 0.1.7-standalone-prototype
+    validations:
+      required: true
+
+  - type: input
+    id: windows_version
+    attributes:
+      label: Windows version
+      description: Tell us your Windows version, such as Windows 11 24H2.
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+
+  - type: dropdown
+    id: preview_resolution
+    attributes:
+      label: Preview resolution
+      description: Which resolution was selected in FFXIV Clean Stream?
+      options:
+        - 1280 x 720
+        - 1920 x 1080
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frame_rate
+    attributes:
+      label: Frame rate
+      description: Which frame rate was selected in FFXIV Clean Stream?
+      options:
+        - 15 FPS
+        - 30 FPS
+        - 60 FPS
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: startup_order
+    attributes:
+      label: Startup-order checks
+      description: Check each step you completed before the problem appeared.
+      options:
+        - label: I started FFXIV in DirectX 11 mode.
+        - label: I started MMOMinion and waited until its GUI was visible.
+        - label: I started FFXIV Clean Stream at the same permission level as FFXIV.
+        - label: In Discord, I selected the window named "FFXIV Clean Stream", not FFXIV, the whole screen, or the controls window.
+
+  - type: textarea
+    id: error_text
+    attributes:
+      label: Exact error or status text
+      description: Copy the complete error or status message. Write "None" if no message appeared. Remove personal information and never include passwords or account tokens.
+      placeholder: Paste the exact text here, or write None.
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction_steps
+    attributes:
+      label: Steps to reproduce
+      description: List what you did, in order, so someone else can see the same problem.
+      placeholder: |
+        1. Start ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: What did you expect to happen?
+      placeholder: Describe the result you expected.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behavior
+    attributes:
+      label: What actually happened?
+      placeholder: Describe what you saw instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Add any other useful details, such as whether restarting FFXIV changed the result. Screenshots are welcome after you hide personal information.
