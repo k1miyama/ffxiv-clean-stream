@@ -1,8 +1,8 @@
 # FFXIV Clean Stream
 
-FFXIV Clean Stream creates a separate game preview for Discord. Your normal FFXIV window keeps
-showing the MMOMinion GUI, while the preview keeps FFXIV and its native HUD but leaves the
-MMOMinion overlay out.
+FFXIV Clean Stream creates a separate game preview for Discord, keeping FFXIV and its native HUD
+while excluding compatible third-party overlays. Your normal FFXIV window continues showing those
+overlays.
 
 The app does not stream or record anything by itself. Discord captures the preview window named
 **FFXIV Clean Stream**.
@@ -10,11 +10,22 @@ The app does not stream or record anything by itself. Discord captures the previ
 > Share **FFXIV Clean Stream** in Discord. Do not share the FFXIV window or your entire screen,
 > because those still contain the overlay.
 
+## Overlay compatibility
+
+This program copies the game frame before forwarding to existing
+DirectX 11 presentation hooks, so overlays drawn afterward can stay visible in-game without
+appearing in the preview.
+
+Anything drawn before the frame is copied remains visible, including plugin changes already
+rendered into the game's native HUD or world. Load your overlays before starting capture and check
+the preview before sharing. **Ready** confirms capture is running; it does not verify that every
+overlay was excluded.
+
 ## Requirements
 
 - 64-bit Windows 10 or newer.
 - FFXIV running with the DirectX 11 client (`ffxiv_dx11.exe`).
-- MMOMinion running with its GUI visible before capture begins.
+- Any overlay you want to exclude loaded and visible before capture begins.
 - `FfxivCleanStream.exe` and `FfxivCleanStreamHook64.dll` kept together in the same folder.
 - FFXIV Clean Stream running at the same permission level as FFXIV. If FFXIV runs as
   administrator, run FFXIV Clean Stream as administrator too.
@@ -25,7 +36,7 @@ Only one copy of FFXIV Clean Stream can run at a time.
 
 1. Extract the complete release into one folder.
 2. Start FFXIV in DirectX 11 mode.
-3. Start MMOMinion and wait until its GUI is visible in the game.
+3. Load your overlay and wait until its UI is visible in the game (see **Overlay compatibility** above).
 4. Run `FfxivCleanStream.exe` at the same permission level as FFXIV.
 5. Leave **1280 × 720 (recommended)** and **30 FPS (recommended)** selected, then click
    **Start / Resume**.
@@ -37,8 +48,8 @@ If the app reports an error, click **Copy error** and paste the complete message
 [GitHub bug-report form](https://github.com/k1miyama/ffxiv-clean-stream/issues/new/choose). The
 button stays disabled when the current status is not an error.
 
-Keep the preview window open while it is being shared. The MMOMinion GUI should remain visible in
-your normal game window but absent from the Discord preview.
+Keep the preview window open while it is being shared. Check that the overlay remains visible in
+your normal game window but is absent from the Discord preview.
 
 When you finish streaming, click **End stream** or close the preview with its **X** button. To stream
 again, choose the resolution and frame rate you want and click **Start / Resume**. Discord may keep
@@ -100,11 +111,11 @@ normal: the app drops work instead of making the game wait.
 | Message or problem | What to do |
 | --- | --- |
 | Discord still shows the overlay | Confirm Discord is sharing **FFXIV Clean Stream**, not FFXIV or the entire screen. |
-| `FFXIV (DirectX 11) was not found` | Start the DirectX 11 game client, start MMOMinion, wait for its GUI, then click **Start / Resume**. |
+| `FFXIV (DirectX 11) was not found` | Start the DirectX 11 game client, load your overlay, wait for its UI, then click **Start / Resume**. |
 | `Windows denied access to FFXIV` | Run FFXIV Clean Stream at the same permission level as FFXIV, usually as administrator. |
 | The helper DLL is missing or could not load | Keep the EXE and DLL together. Check whether security software quarantined `FfxivCleanStreamHook64.dll`. |
-| MMOMinion changed its graphics hook | Fully exit and restart FFXIV. Wait for the MMOMinion GUI to appear, then run FFXIV Clean Stream and start capture again. |
-| The overlay is present from the first preview frame | Restart FFXIV and repeat the startup order exactly. If it persists, that MMOMinion build may draw too early for its pixels to be separated. |
+| MMOMinion changed its graphics hook | This message can also apply to other overlays. Fully exit and restart FFXIV. Wait for your overlay's UI to appear, then run FFXIV Clean Stream and start capture again. |
+| The overlay is present from the first preview frame | Restart FFXIV and repeat the startup order exactly. If it persists, that overlay may draw before capture and cannot be excluded in that configuration. |
 | The preview is black, frozen, or reports a GPU error | Click **Copy error**, then click **End stream**, select 1280 × 720 and 30 FPS, and click **Start / Resume**. If it still fails, run `GpuShareSelfTest.exe` and include the copied message in a bug report. |
 | Discord stays black after restarting the stream | Stop sharing the old preview in Discord and select the newly created **FFXIV Clean Stream** window. |
 | Game performance drops | Click **End stream**, select 1280 × 720 and 15 FPS, then click **Start / Resume**. The 720p choice lightens the output window; 15 FPS also reduces game-side copy frequency. Disable other programs that inject into or capture FFXIV. |
@@ -126,9 +137,9 @@ is required.
 
 - The app loads a native capture helper into FFXIV. Security software may warn about or block this
   behavior, and any injected graphics helper carries some crash risk.
-- Overlay removal depends on render order. It works when MMOMinion draws through the compatible
-  presentation path after capture attaches. An overlay already baked into the game frame cannot be
-  removed generically.
+- Overlay removal depends on render order. Only overlays drawn after the frame is copied can be
+  excluded. An overlay already baked into the game frame cannot be removed generically; see
+  **Overlay compatibility** above.
 - The preview carries video only; it does not forward FFXIV audio.
 - Pausing, ending the stream, or closing the controller stops capture but does not remotely unload
   the helper. Fully exiting FFXIV unloads it.
@@ -137,7 +148,7 @@ is required.
 ## Optional GPU self-test
 
 `GpuShareSelfTest.exe` checks the GPU-sharing methods without opening or modifying FFXIV,
-MMOMinion, or Discord. A successful result verifies the frame transport on the current GPU and
+any overlay, or Discord. A successful result verifies the frame transport on the current GPU and
 driver; the real overlay order is tested only when running with FFXIV.
 
 ## Project layout
