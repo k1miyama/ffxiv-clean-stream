@@ -101,8 +101,13 @@ LRESULT CALLBACK PreviewWindowProc(HWND window, UINT message, WPARAM wParam,
                      static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
             SetBkMode(dc, TRANSPARENT);
             SetTextColor(dc, RGB(210, 210, 210));
-            DrawTextW(dc, L"Waiting for a clean FFXIV frame...", -1, &rect,
+            const HGDIOBJ previousFont =
+                SelectObject(dc, GetStockObject(DEFAULT_GUI_FONT));
+            const UiLanguage language = controller
+                ? controller->Language() : UiLanguage::English;
+            DrawTextW(dc, UiText(language, L"Waiting for a clean FFXIV frame..."), -1, &rect,
                       DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+            SelectObject(dc, previousFont);
         }
         EndPaint(window, &paint);
         return 0;

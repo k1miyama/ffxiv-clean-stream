@@ -28,7 +28,10 @@ and confirms that the downstream overlay still ran exactly once.
   stubs to exercise the real resolution combo, Start, End, and Copy error buttons, preview X, DPI
   sizing, retained IPC session, no-reinjection resume, and unexpected-window-destruction cleanup.
   Its injected in-memory clipboard writer verifies the complete copied error without reading or
-  changing the user's clipboard.
+  changing the user's clipboard. It also checks English/Simplified Chinese switching before
+  capture, while streaming or paused, during an error, and after End; translated diagnostics and numeric error details;
+  control text layout; Windows language defaults; and saved-language startup. Language preferences
+  are redirected to a temporary test directory so the user's settings are untouched.
 - `plain_legacy_ring_protocol_test.cpp` deterministically exercises protocol states that should not
   depend on GPU timing.
 - `gpu_share_self_test.cpp` checks every supported cross-device texture-sharing mode.

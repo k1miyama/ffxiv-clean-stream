@@ -6,6 +6,8 @@
 #include "fcs_ui.hpp"
 
 int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand) {
+    using fcs::host::UiText;
+    const auto language = fcs::host::LoadUiLanguage();
     // A capture session has one controller/consumer. Two controller processes
     // would otherwise race over the bidirectional resource handshake and the
     // keyed-mutex ring, so exclude them before either can claim an IPC page.
@@ -16,12 +18,12 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand) {
     if (!singleton) {
         MessageBoxW(
             nullptr,
-            L"FFXIV Clean Stream could not reserve its controller session.",
+            UiText(language, L"FFXIV Clean Stream could not reserve its controller session."),
             L"FFXIV Clean Stream", MB_OK | MB_ICONERROR);
         return 1;
     }
     if (GetLastError() == ERROR_ALREADY_EXISTS) {
-        MessageBoxW(nullptr, L"FFXIV Clean Stream is already running.",
+        MessageBoxW(nullptr, UiText(language, L"FFXIV Clean Stream is already running."),
                     L"FFXIV Clean Stream", MB_OK | MB_ICONINFORMATION);
         CloseHandle(singleton);
         return 0;
@@ -29,6 +31,7 @@ int WINAPI WinMain(HINSTANCE instance, HINSTANCE, LPSTR, int showCommand) {
 
     SetProcessDPIAware();
     fcs::host::HostController controller(instance);
+    controller.SetLanguage(language);
     if (!fcs::host::CreateHostWindows(instance, showCommand, controller)) {
         CloseHandle(singleton);
         return 1;

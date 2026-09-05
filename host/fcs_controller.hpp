@@ -4,6 +4,7 @@
 #define NOMINMAX
 #include <windows.h>
 
+#include "fcs_localization.hpp"
 #include "fcs_preview.hpp"
 #include "fcs_session.hpp"
 #include "fcs_status.hpp"
@@ -31,6 +32,8 @@ public:
     void PauseCapture();
     void EndCapture();
     void CopyErrorToClipboard();
+    void SetLanguage(UiLanguage language);
+    UiLanguage Language() const { return language_; }
     void Tick();
     void Shutdown();
 
@@ -47,7 +50,9 @@ private:
                             StatusSeverity severity);
     StatusSink StatusReporter();
     void SetStatus(const wchar_t* text,
-                   StatusSeverity severity = StatusSeverity::Info);
+                   StatusSeverity severity = StatusSeverity::Info,
+                   const wchar_t* chinese = nullptr);
+    void RefreshStatusText();
     void CloseSession();
     void ClosePreviewWindow();
     bool EnsurePreviewWindow();
@@ -64,6 +69,10 @@ private:
     HWND fpsCombo_ = nullptr;
     HWND copyErrorButton_ = nullptr;
     wchar_t copyableError_[2048]{};
+    wchar_t statusEnglish_[2048]{};
+    wchar_t statusChinese_[2048]{};
+    StatusSeverity statusSeverity_ = StatusSeverity::Info;
+    UiLanguage language_ = UiLanguage::English;
     StreamResolution streamResolution_ = kDefaultStreamResolution;
     UINT statusTicks_ = 0;
     HWND previewDestructionInProgress_ = nullptr;

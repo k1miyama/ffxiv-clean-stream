@@ -62,8 +62,7 @@ void HostController::BindControls(HWND statusLabel, HWND fpsCombo,
     statusLabel_ = statusLabel;
     fpsCombo_ = fpsCombo;
     copyErrorButton_ = copyErrorButton;
-    copyableError_[0] = L'\0';
-    if (copyErrorButton_) EnableWindow(copyErrorButton_, FALSE);
+    SetStatus(kInitialStatus);
 }
 
 void HostController::WriteStatus(void* context, const wchar_t* text,
@@ -76,9 +75,34 @@ StatusSink HostController::StatusReporter() {
 }
 
 void HostController::SetStatus(const wchar_t* text,
-                               StatusSeverity severity) {
+                               StatusSeverity severity,
+                               const wchar_t* chinese) {
     if (!text) text = L"";
-    const bool isError = severity == StatusSeverity::Error;
+    wcsncpy_s(statusEnglish_, text, _TRUNCATE);
+    if (chinese) {
+        wcsncpy_s(statusChinese_, chinese, _TRUNCATE);
+    } else {
+        LocalizeDiagnostic(UiLanguage::SimplifiedChinese, text,
+                           statusChinese_, _countof(statusChinese_));
+    }
+    statusSeverity_ = severity;
+    RefreshStatusText();
+}
+
+void HostController::SetLanguage(UiLanguage language) {
+    if (language != UiLanguage::English &&
+        language != UiLanguage::SimplifiedChinese) return;
+    language_ = language;
+    RefreshStatusText();
+    if (HasPreviewWindow() && !HasPreviewDevice()) {
+        InvalidateRect(previewWindow_, nullptr, FALSE);
+    }
+}
+
+void HostController::RefreshStatusText() {
+    const wchar_t* text = language_ == UiLanguage::SimplifiedChinese
+        ? statusChinese_ : statusEnglish_;
+    const bool isError = statusSeverity_ == StatusSeverity::Error;
     if (isError) {
         wcsncpy_s(copyableError_,
                   sizeof(copyableError_) / sizeof(copyableError_[0]), text,
@@ -87,7 +111,7 @@ void HostController::SetStatus(const wchar_t* text,
         copyableError_[0] = L'\0';
     }
     if (copyErrorButton_) {
-        SetWindowTextW(copyErrorButton_, L"Copy error");
+        SetWindowTextW(copyErrorButton_, UiText(language_, L"Copy error"));
         EnableWindow(copyErrorButton_, isError && copyableError_[0]);
     }
     if (statusLabel_) SetWindowTextW(statusLabel_, text);
@@ -102,7 +126,8 @@ void HostController::CopyErrorToClipboard() {
                                     : nullptr;
     const bool copied = clipboardWriter_ &&
         clipboardWriter_(owner, copyableError_);
-    SetWindowTextW(copyErrorButton_, copied ? L"Copied!" : L"Copy failed");
+    SetWindowTextW(copyErrorButton_,
+                   UiText(language_, copied ? L"Copied!" : L"Copy failed"));
 }
 
 LONG HostController::SelectedFps() const {
@@ -246,42 +271,57 @@ void HostController::UpdateStatus() {
             StatusSeverity::Error);
         return;
     }
-    wchar_t text[768]{};
+    wchar_t text[2][2048]{};
+    wchar_t message[_countof(ipc->message)]{};
+    wcsncpy_s(message, ipc->message, _countof(message) - 1);
     const LONG state = ipc->state;
-    if (state == FCS_STATE_STREAMING) {
-        const double maxMicros = ipc->qpcFrequency > 0
-            ? (static_cast<double>(ipc->hookCpuTicksMax) * 1000000.0 /
-               static_cast<double>(ipc->qpcFrequency))
-            : 0.0;
-        swprintf_s(
-            text, 768,
-            L"Ready. Share the window named ‘FFXIV Clean Stream’ in Discord.\r\n\r\n"
-            L"Clean frames: %lld    Busy frames dropped: %lld\r\n"
-            L"Worst measured copy-submit CPU time: %.1f microseconds\r\n\r\n%s",
-            ipc->copiesSubmitted, ipc->busyDropped, maxMicros, ipc->message);
-    } else if (state == FCS_STATE_WAITING_HOST_RESOURCES) {
-        swprintf_s(
-            text, 768,
-            L"Preparing a compatibility GPU frame ring outside FFXIV...\r\n\r\n%s",
-            ipc->message);
-    } else if (state == FCS_STATE_HOOK_ORDER_LOST) {
-        swprintf_s(
-            text, 768,
-            L"Capture stopped safely because MMOMinion changed its graphics hook.\r\n\r\n"
-            L"Restart FFXIV, wait until the MMOMinion GUI is visible, then click "
-            L"Start / Resume.\r\n\r\n%s",
-            ipc->message);
-    } else if (state == FCS_STATE_ERROR) {
-        swprintf_s(text, 768, L"Capture error (%ld):\r\n%s",
-                   ipc->lastError, ipc->message);
-    } else {
-        swprintf_s(text, 768, L"%s",
-                   ipc->message[0] ? ipc->message : L"Waiting...");
+    const LONG error = ipc->lastError;
+    const LONG64 copies = ipc->copiesSubmitted;
+    const LONG64 dropped = ipc->busyDropped;
+    const LONG64 frequency = ipc->qpcFrequency;
+    const double maxMicros = frequency > 0
+        ? static_cast<double>(ipc->hookCpuTicksMax) * 1000000.0 /
+              static_cast<double>(frequency)
+        : 0.0;
+    // Retain both renderings of the same snapshot. Changing language must not
+    // restart capture, re-read a stale IPC state, or clear a current error.
+    for (int index = 0; index < 2; ++index) {
+        const UiLanguage language = index == 0
+            ? UiLanguage::English : UiLanguage::SimplifiedChinese;
+        wchar_t diagnostic[512]{};
+        LocalizeDiagnostic(language, message, diagnostic, _countof(diagnostic));
+        if (state == FCS_STATE_STREAMING) {
+            swprintf_s(
+                text[index], _countof(text[index]), UiText(language,
+                L"Ready. Share the window named ‘FFXIV Clean Stream’ in Discord.\r\n\r\n"
+                L"Clean frames: %lld    Busy frames dropped: %lld\r\n"
+                L"Worst measured copy-submit CPU time: %.1f microseconds\r\n\r\n%s"),
+                copies, dropped, maxMicros, diagnostic);
+        } else if (state == FCS_STATE_WAITING_HOST_RESOURCES) {
+            swprintf_s(
+                text[index], _countof(text[index]), UiText(language,
+                L"Preparing a compatibility GPU frame ring outside FFXIV...\r\n\r\n%s"),
+                diagnostic);
+        } else if (state == FCS_STATE_HOOK_ORDER_LOST) {
+            swprintf_s(
+                text[index], _countof(text[index]), UiText(language,
+                L"Capture stopped safely because MMOMinion changed its graphics hook.\r\n\r\n"
+                L"Restart FFXIV, wait until the MMOMinion GUI is visible, then click "
+                L"Start / Resume.\r\n\r\n%s"),
+                diagnostic);
+        } else if (state == FCS_STATE_ERROR) {
+            swprintf_s(text[index], _countof(text[index]),
+                       UiText(language, L"Capture error (%ld):\r\n%s"),
+                       error, diagnostic);
+        } else {
+            swprintf_s(text[index], _countof(text[index]), L"%s",
+                       message[0] ? diagnostic : UiText(language, L"Waiting..."));
+        }
     }
-    SetStatus(text, state == FCS_STATE_ERROR ||
+    SetStatus(text[0], state == FCS_STATE_ERROR ||
                         state == FCS_STATE_HOOK_ORDER_LOST
                     ? StatusSeverity::Error
-                    : StatusSeverity::Info);
+                    : StatusSeverity::Info, text[1]);
 }
 
 void HostController::Tick() {

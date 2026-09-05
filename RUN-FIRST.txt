@@ -3,6 +3,12 @@ FFXIV CLEAN STREAM — QUICK START
 FFXIV Clean Stream creates the overlay-free preview that you share in Discord.
 Your normal FFXIV window continues to show the MMOMinion GUI.
 
+Choose English or 简体中文 in “Language / 语言” at the top of the controls.
+The UI switches immediately and remembers your choice for the next launch.
+简体中文：在“Language / 语言”中选择“简体中文”。点击“开始 / 继续”，
+等待“已就绪”，然后在 Discord 中共享“FFXIV Clean Stream”窗口。
+出现错误时点击“复制错误”；直播结束时点击“结束直播”。
+
 1. Start FFXIV in DirectX 11 mode.
 2. Start MMOMinion and wait until its GUI is visible.
 3. Run FfxivCleanStream.exe. If FFXIV runs as administrator, run this

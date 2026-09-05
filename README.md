@@ -45,6 +45,21 @@ again, choose the resolution and frame rate you want and click **Start / Resume*
 the old, closed preview selected, so choose the newly created **FFXIV Clean Stream** window before
 going live again.
 
+## UI language
+
+Choose **English** or **简体中文** in the **Language / 语言** selector at the top of the
+controls window. The interface switches immediately, including instructions, controls, status
+messages, and errors. Capture continues with the same resolution and frame rate.
+
+On first launch, Simplified Chinese Windows installations use Simplified Chinese; other Windows
+UI languages use English. Your selection is saved per Windows user in
+`%LOCALAPPDATA%\FfxivCleanStream\settings.ini`. The Discord preview window is always named
+**FFXIV Clean Stream** in both languages.
+
+简体中文用户：在控制面板顶部的 **Language / 语言** 中选择 **简体中文**。
+点击 **开始 / 继续** 启动捕获，状态显示 **已就绪** 后，在 Discord 中共享
+**FFXIV Clean Stream** 窗口。出现错误时，可点击 **复制错误** 复制完整错误信息。
+
 ## Controls, resolution, and frame rate
 
 - **Start / Resume** starts capture, resumes after a pause, or creates a new preview after an end. It
